@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electron-store — техника в наличии</title>
+  <meta name="description" content="Electron-store: смартфоны, ноутбуки и наушники. Каталог с характеристиками и ценами.">
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0b7a3b;
+      --accent-dark: #075c2c;
+      --border: #e5e7eb;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(1180px, 100% - 32px);
+      margin: 0 auto;
+    }
+
+    /* ---------- Шапка ---------- */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo strong {
+      font-size: 24px;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+    }
+
+    .logo span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    nav a {
+      padding: 8px 12px;
+      border-radius: 10px;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: #eef7f0;
+      color: var(--accent-dark);
+    }
+
+    .cart-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .cart-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .cart-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero { padding: 40px 0 20px; }
+
+    .hero-box {
+      background: linear-gradient(135deg, #0b7a3b, #0f9d58);
+      color: #ffffff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-box h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 4vw, 40px);
+      line-height: 1.15;
+    }
+
+    .hero-box p {
+      margin: 0;
+      max-width: 720px;
+      opacity: 0.92;
+    }
+
+    main { padding: 24px 0 48px; }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 32px 0 16px;
+    }
+
+    .section-title h2 { margin: 0; font-size: 26px; }
+    .section-title span { color: var(--muted); font-size: 14px; }
+
+    /* ---------- Сетка карточек ---------- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      background: #e5e7eb;
+    }
+
+    .card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .specs {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .specs li { margin-bottom: 4px; }
+
+    .card-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 8px;
+    }
+
+    .price {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent-dark);
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn:hover { background: var(--accent-dark); }
+    .btn:active { transform: scale(0.97); }
+
+    .btn.added {
+      background: #16a34a;
+    }
+
+    /* ---------- О магазине ---------- */
+    .about {
+      margin-top: 40px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .about h2 { margin-top: 0; }
+    .about p { margin-bottom: 0; color: var(--muted); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+      padding: 20px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* ---------- Корзина (выезжающая панель) ---------- */
+    .cart-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 40;
+    }
+
+    .cart-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cart-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      width: min(420px, 100%);
+      background: #ffffff;
+      box-shadow: -10px 0 30px rgba(15, 23, 42, 0.18);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-drawer.open { transform: translateX(0); }
+
+    .cart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cart-header h2 { margin: 0; font-size: 20px; }
+
+    .cart-close {
+      border: 0;
+      background: #f3f4f6;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .cart-close:hover { background: #e5e7eb; color: var(--text); }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 10px;
+      font-size: 15px;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cart-item img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #e5e7eb;
+    }
+
+    .cart-item-info { min-width: 0; }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      line-height: 1.3;
+    }
+
+    .cart-item-price {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .qty button {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      cursor: pointer;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .qty button:hover { border-color: var(--accent); color: var(--accent-dark); }
+
+    .qty span { min-width: 22px; text-align: center; font-weight: 700; font-size: 14px; }
+
+    .cart-item-remove {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      align-self: start;
+    }
+
+    .cart-item-remove:hover { color: var(--danger); }
+
+    .cart-footer {
+      padding: 18px 20px;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+      font-size: 16px;
+    }
+
+    .cart-total-row strong { font-size: 22px; color: var(--accent-dark); }
+
+    .checkout-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .checkout-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* ---------- Модалка успешного заказа ---------- */
+    .success-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 60;
+      padding: 20px;
+    }
+
+    .success-modal.open { display: flex; }
+
+    .success-card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+    }
+
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #16a34a;
+      font-size: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .success-card h3 { margin: 0 0 8px; font-size: 22px; }
+    .success-card p { margin: 0 0 20px; color: var(--muted); }
+
+    /* ---------- Адаптив ---------- */
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      nav { justify-content: flex-start; }
+      .grid { grid-template-columns: 1fr; }
+      .hero-box { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <a class="logo" href="#top">
+        <strong>Electron-store</strong>
+        <span>electron-store.ru</span>
+      </a>
+
+      <nav aria-label="Основная навигация">
+        <a href="#smartphones">Смартфоны</a>
+        <a href="#laptops">Ноутбуки</a>
+        <a href="#headphones">Наушники</a>
+        <a href="#about">О магазине</a>
+      </nav>
+
+      <button class="cart-btn" id="cartBtn" type="button">
+        🛒 Корзина
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top" class="container">
+    <section class="hero">
+      <div class="hero-box">
+        <h1>Техника Electron-store</h1>
+        <p>
+          Учебный интернет-магазин цифровой техники. В каталоге три категории:
+          смартфоны, ноутбуки и наушники. Добавляйте товары в корзину и оформляйте заказ.
+        </p>
+      </div>
+    </section>
+
+    <section id="catalog">
+      <div class="section-title">
+        <h2>Каталог товаров</h2>
+        <span>3 категории · 9 товаров</span>
+      </div>
+    </section>
+
+    <!-- ---------- Смартфоны ---------- -->
+    <section id="smartphones">
+      <div class="section-title">
+        <h2>Смартфоны</h2>
+        <span>3 товара</span>
+      </div>
+
+      <div class="grid">
+        <article class="card"
+          data-id="iphone-15"
+          data-name="Смартфон Apple iPhone 15 128 ГБ, чёрный"
+          data-price="79990"
+          data-img="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80"
+            alt="Смартфон Apple iPhone 15 128 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=iPhone+15'"
+          >
+          <div class="card-body">
+            <h3>Смартфон Apple iPhone 15 128 ГБ, чёрный</h3>
+            <ul class="specs">
+              <li>Экран: 6.1" OLED, 60 Гц</li>
+              <li>Память: 128 ГБ</li>
+              <li>Камера: 48 Мп + 12 Мп</li>
+              <li>Чип: Apple A16 Bionic</li>
+              <li>Связь: 5G, Wi-Fi 6</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">79 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="galaxy-s24"
+          data-name="Смартфон Samsung Galaxy S24 256 ГБ, серый"
+          data-price="74490"
+          data-img="https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=800&q=80"
+            alt="Смартфон Samsung Galaxy S24 256 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=Galaxy+S24'"
+          >
+          <div class="card-body">
+            <h3>Смартфон Samsung Galaxy S24 256 ГБ, серый</h3>
+            <ul class="specs">
+              <li>Экран: 6.2" Dynamic AMOLED, 120 Гц</li>
+              <li>Память: 256 ГБ</li>
+              <li>Камера: 50 Мп + 12 Мп + 10 Мп</li>
+              <li>Процессор: Exynos 2400</li>
+              <li>Связь: 5G, Wi-Fi 6E</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">74 490 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="redmi-note-13"
+          data-name="Смартфон Xiaomi Redmi Note 13 128 ГБ, синий"
+          data-price="19990"
+          data-img="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80"
+            alt="Смартфон Xiaomi Redmi Note 13 128 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=Redmi+Note+13'"
+          >
+          <div class="card-body">
+            <h3>Смартфон Xiaomi Redmi Note 13 128 ГБ, синий</h3>
+            <ul class="specs">
+              <li>Экран: 6.67" AMOLED, 120 Гц</li>
+              <li>Память: 128 ГБ</li>
+              <li>Камера: 108 Мп + 8 Мп + 2 Мп</li>
+              <li>Батарея: 5000 мАч</li>
+              <li>Связь: 4G, Wi-Fi 5</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">19 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- Ноутбуки ---------- -->
+    <section id="laptops">
+      <div class="section-title">
+        <h2>Ноутбуки</h2>
+        <span>3 товара</span>
+      </div>
+
+      <div class="grid">
+        <article class="card"
+          data-id="macbook-air-m2"
+          data-name="Ноутбук Apple MacBook Air 13 M2 256 ГБ, серебристый"
+          data-price="89990"
+          data-img="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80"
+            alt="Ноутбук Apple MacBook Air 13 M2 256 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=MacBook+Air+M2'"
+          >
+          <div class="card-body">
+            <h3>Ноутбук Apple MacBook Air 13 M2 256 ГБ, серебристый</h3>
+            <ul class="specs">
+              <li>Экран: 13.6" Liquid Retina</li>
+              <li>Память: 8 ГБ</li>
+              <li>Накопитель: SSD 256 ГБ</li>
+              <li>Чип: Apple M2</li>
+              <li>ОС: macOS</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">89 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="asus-vivobook-15"
+          data-name="Ноутбук ASUS Vivobook 15 512 ГБ, чёрный"
+          data-price="54990"
+          data-img="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=800&q=80"
+            alt="Ноутбук ASUS Vivobook 15 512 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=ASUS+Vivobook+15'"
+          >
+          <div class="card-body">
+            <h3>Ноутбук ASUS Vivobook 15 512 ГБ, чёрный</h3>
+            <ul class="specs">
+              <li>Экран: 15.6" IPS, Full HD</li>
+              <li>Память: 16 ГБ</li>
+              <li>Накопитель: SSD 512 ГБ</li>
+              <li>Процессор: Intel Core i5</li>
+              <li>ОС: Windows 11</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">54 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="lenovo-ideapad-3"
+          data-name="Ноутбук Lenovo IdeaPad 3 256 ГБ, серый"
+          data-price="36990"
+          data-img="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80"
+            alt="Ноутбук Lenovo IdeaPad 3 256 ГБ"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=Lenovo+IdeaPad+3'"
+          >
+          <div class="card-body">
+            <h3>Ноутбук Lenovo IdeaPad 3 256 ГБ, серый</h3>
+            <ul class="specs">
+              <li>Экран: 15.6" TN, Full HD</li>
+              <li>Память: 8 ГБ</li>
+              <li>Накопитель: SSD 256 ГБ</li>
+              <li>Процессор: AMD Ryzen 5</li>
+              <li>ОС: Windows 11</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">36 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- Наушники ---------- -->
+    <section id="headphones">
+      <div class="section-title">
+        <h2>Наушники</h2>
+        <span>3 товара</span>
+      </div>
+
+      <div class="grid">
+        <article class="card"
+          data-id="airpods-pro-2"
+          data-name="Наушники Apple AirPods Pro 2, белый"
+          data-price="24990"
+          data-img="https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=800&q=80"
+            alt="Наушники Apple AirPods Pro 2"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=AirPods+Pro+2'"
+          >
+          <div class="card-body">
+            <h3>Наушники Apple AirPods Pro 2, белый</h3>
+            <ul class="specs">
+              <li>Тип: TWS</li>
+              <li>Активное шумоподавление</li>
+              <li>Работа: до 6 ч, с кейсом до 30 ч</li>
+              <li>Bluetooth 5.3</li>
+              <li>Защита: IP54</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">24 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="sony-wh-1000xm5"
+          data-name="Наушники Sony WH-1000XM5, чёрный"
+          data-price="29990"
+          data-img="https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80"
+            alt="Наушники Sony WH-1000XM5"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=Sony+WH-1000XM5'"
+          >
+          <div class="card-body">
+            <h3>Наушники Sony WH-1000XM5, чёрный</h3>
+            <ul class="specs">
+              <li>Тип: накладные</li>
+              <li>Активное шумоподавление</li>
+              <li>Работа: до 30 ч</li>
+              <li>Bluetooth 5.2</li>
+              <li>Встроенный микрофон</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">29 990 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card"
+          data-id="jbl-tune-510bt"
+          data-name="Наушники JBL Tune 510BT, синий"
+          data-price="3490"
+          data-img="https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=800&q=80">
+          <img
+            src="https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=800&q=80"
+            alt="Наушники JBL Tune 510BT"
+            onerror="this.src='https://placehold.co/600x400/eeeeee/333333?text=JBL+Tune+510BT'"
+          >
+          <div class="card-body">
+            <h3>Наушники JBL Tune 510BT, синий</h3>
+            <ul class="specs">
+              <li>Тип: накладные</li>
+              <li>Работа: до 40 ч</li>
+              <li>Bluetooth 5.0</li>
+              <li>Складная конструкция</li>
+              <li>Встроенный микрофон</li>
+            </ul>
+            <div class="card-footer">
+              <span class="price">3 490 ₽</span>
+              <button class="btn add-to-cart" type="button">В корзину</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="about" class="about">
+      <h2>О магазине</h2>
+      <p>
+        Electron-store — учебный проект интернет-магазина цифровой техники.
+        Домен: <strong>electron-store.ru</strong>. В каталоге представлены три
+        категории: смартфоны, ноутбуки и наушники. Каждая карточка содержит
+        изображение, название, набор характеристик и цену.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>© 2026 Electron-store</span>
+      <span>Учебный проект · electron-store.ru</span>
+    </div>
+  </footer>
+
+  <!-- ---------- Корзина ---------- -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true" aria-label="Корзина">
+    <div class="cart-header">
+      <h2>Корзина</h2>
+      <button class="cart-close" id="cartClose" type="button" aria-label="Закрыть корзину">✕</button>
+    </div>
+
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty">Корзина пуста. Добавьте товары из каталога.</div>
+    </div>
+
+    <div class="cart-footer">
+      <div class="cart-total-row">
+        <span>Итого:</span>
+        <strong id="cartTotal">0 ₽</strong>
+      </div>
+      <button class="btn checkout-btn" id="checkoutBtn" type="button" disabled>Оплатить</button>
+    </div>
+  </aside>
+
+  <!-- ---------- Модалка успешного заказа ---------- -->
+  <div class="success-modal" id="successModal">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h3>Заказ оформлен!</h3>
+      <p id="successText"></p>
+      <button class="btn" id="successClose" type="button">Отлично</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Состояние корзины ----------
+    const STORAGE_KEY = 'electron-store-cart';
+    let cart = [];
+
+    // Пытаемся восстановить корзину из localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) cart = JSON.parse(saved);
+    } catch (e) {
+      cart = [];
+    }
+
+    // ---------- Элементы ----------
+    const cartDrawer = document.getElementById('cartDrawer');
+    const cartOverlay = document.getElementById('cartOverlay');
+    const cartItemsEl = document.getElementById('cartItems');
+    const cartTotalEl = document.getElementById('cartTotal');
+    const cartCountEl = document.getElementById('cartCount');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const cartBtn = document.getElementById('cartBtn');
+    const cartClose = document.getElementById('cartClose');
+    const successModal = document.getElementById('successModal');
+    const successText = document.getElementById('successText');
+    const successClose = document.getElementById('successClose');
+
+    // ---------- Утилиты ----------
+    const formatPrice = (value) =>
+      new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
+
+    function saveCart() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+      } catch (e) { /* ignore */ }
+    }
+
+    // ---------- Открытие / закрытие корзины ----------
+    function openCart() {
+      cartDrawer.classList.add('open');
+      cartOverlay.classList.add('open');
+      cartDrawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeCart() {
+      cartDrawer.classList.remove('open');
+      cartOverlay.classList.remove('open');
+      cartDrawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    cartBtn.addEventListener('click', openCart);
+    cartClose.addEventListener('click', closeCart);
+    cartOverlay.addEventListener('click', closeCart);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCart();
+    });
+
+    // ---------- Добавление товара ----------
+    function addToCart(card, button) {
+      const id = card.dataset.id;
+      const name = card.dataset.name;
+      const price = Number(card.dataset.price);
+      const img = card.dataset.img;
+
+      const existing = cart.find((item) => item.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ id, name, price, img, qty: 1 });
+      }
+
+      saveCart();
+      renderCart();
+
+      // Короткая визуальная обратная связь на кнопке
+      const original = button.textContent;
+      button.textContent = 'Добавлено ✓';
+      button.classList.add('added');
+      setTimeout(() => {
+        button.textContent = original;
+        button.classList.remove('added');
+      }, 900);
+    }
+
+    // ---------- Отрисовка корзины ----------
+    function renderCart() {
+      const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+      const totalSum = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+
+      cartCountEl.textContent = totalQty;
+      cartTotalEl.textContent = formatPrice(totalSum);
+      checkoutBtn.disabled = cart.length === 0;
+
+      if (cart.length === 0) {
+        cartItemsEl.innerHTML =
+          '<div class="cart-empty">Корзина пуста. Добавьте товары из каталога.</div>';
+        return;
+      }
+
+      cartItemsEl.innerHTML = cart.map((item) => `
+        <div class="cart-item" data-id="${item.id}">
+          <img src="${item.img}" alt="${item.name}" onerror="this.src='https://placehold.co/140x140/eeeeee/333333?text=%3F'">
+          <div class="cart-item-info">
+            <p class="cart-item-name">${item.name}</p>
+            <div class="cart-item-price">${formatPrice(item.price)} × ${item.qty} = <strong>${formatPrice(item.price * item.qty)}</strong></div>
+            <div class="qty">
+              <button type="button" data-action="minus" aria-label="Уменьшить количество">−</button>
+              <span>${item.qty}</span>
+              <button type="button" data-action="plus" aria-label="Увеличить количество">+</button>
+            </div>
+          </div>
+          <button class="cart-item-remove" type="button" data-action="remove" aria-label="Удалить товар">✕</button>
+        </div>
+      `).join('');
+    }
+
+    // ---------- Делегирование кликов в корзине ----------
+    cartItemsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const itemEl = btn.closest('.cart-item');
+      if (!itemEl) return;
+
+      const id = itemEl.dataset.id;
+      const action = btn.dataset.action;
+      const item = cart.find((i) => i.id === id);
+      if (!item) return;
+
+      if (action === 'plus') item.qty += 1;
+      if (action === 'minus') {
+        item.qty -= 1;
+        if (item.qty <= 0) cart = cart.filter((i) => i.id !== id);
+      }
+      if (action === 'remove') {
+        cart = cart.filter((i) => i.id !== id);
+      }
+
+      saveCart();
+      renderCart();
+    });
+
+    // ---------- Обработка «В корзину» ----------
+    document.querySelectorAll('.add-to-cart').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.card');
+        addToCart(card, btn);
+      });
+    });
+
+    // ---------- Оплата ----------
+    checkoutBtn.addEventListener('click', () => {
+      if (cart.length === 0) return;
+
+      const totalSum = cart.reduce((sum, item) => sum + item.qty * item.price, 0);
+      const orderNumber = 'ES-' + Math.floor(100000 + Math.random() * 900000);
+
+      successText.textContent =
+        `Заказ № ${orderNumber} на сумму ${formatPrice(totalSum)} принят. Мы свяжемся с вами для подтверждения.`;
+
+      cart = [];
+      saveCart();
+      renderCart();
+      closeCart();
+      successModal.classList.add('open');
+    });
+
+    successClose.addEventListener('click', () => {
+      successModal.classList.remove('open');
+    });
+
+    successModal.addEventListener('click', (e) => {
+      if (e.target === successModal) successModal.classList.remove('open');
+    });
+
+    renderCart();
+  </script>
+</body>
+</html>
